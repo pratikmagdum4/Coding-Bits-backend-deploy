@@ -1,6 +1,4 @@
-const mongoose = require("mongoose");
-
-
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -10,8 +8,7 @@ const userSchema = new mongoose.Schema({
   profilePicture: { type: String }, // URL to profile picture
   bio: { type: String }, // Short bio for job seekers
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-
+  updatedAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("User", userSchema);
+export default mongoose.model('User', userSchema);

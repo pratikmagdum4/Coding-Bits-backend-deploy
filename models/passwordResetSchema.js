@@ -1,18 +1,18 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const passwordResetSchema = new mongoose.Schema({
-        email: {
-          type: String, 
-          required: true 
-        },
-        token: {
-         type: String,
-          required: true 
-        },
-        expiration: { 
-        type: Date, 
-        required: true 
-        }
+  email: {
+    type: String,
+    required: true,
+  },
+  token: {
+    type: String,
+    required: true,
+  },
+  expiration: {
+    type: Date,
+    required: true,
+  },
 });
 
-module.exports=mongoose.model('PasswordReset', passwordResetSchema);
+export default mongoose.model('PasswordReset', passwordResetSchema);

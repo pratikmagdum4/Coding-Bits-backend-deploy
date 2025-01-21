@@ -1,4 +1,5 @@
 {
+  "type":"module",
   "scripts": {
     "server": "nodemon src/server.js",
     "start": "node src/server.js",
