@@ -1,6 +1,7 @@
 import Job from "../../models/jobPortal/job.js";
 import Recruiter from "../../models/jobPortal/recruiter.js";
-
+import applications from "../../models/jobPortal/applications.js";
+import JobSeeker from "../../models/jobPortal/jobSeeker.js";
 const AddJob = async (req,res) => {
     try {
 
@@ -117,7 +118,42 @@ const deleteJob = async (req, res) => {
     }
   };
 
+  const getApplicants = async (req, res) => {
+    try {
+        const userId = req.user.id; // Assuming this is the employer's ID
+        const { jobId } = req.params;
+
+        // Find all applications for the specified jobId and populate the userId field to get applicant details
+        const applications1 = await applications.find({ jobId }).populate('userId', 'name email profile'); // Adjust fields as needed
+
+        if (!applications1 || applications1.length === 0) {
+            return res.status(404).json({ message: "No applicants found for this job." });
+        }
+
+        // Send the list of applicants as a response
+        res.status(200).json({ success: true, data: applications1 });
+    } catch (err) {
+        console.error("Error fetching applicants:", err);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    }
+};
 
 
-  
-  export {AddJob,updateJob,deleteJob,getJobsByRecruiter};
+const getProfileDataOfApplicant = async (req,res)=>{
+  try{
+      const {seekerId} = req.params;
+      // console.log()
+      const user = await JobSeeker.findById({_id:seekerId});
+      console.log("the user is",user)
+      if(!user)
+      {
+          res.status(404).json({msg:"Seeker not found"})
+      }
+      res.status(200).json(user);
+  }catch(err)
+  {
+    console.log("error is",NativeError)
+      res.status(500).json({msg:"Internal server error"});
+  }
+}
+  export {AddJob,updateJob,deleteJob,getJobsByRecruiter,getApplicants,getProfileDataOfApplicant};

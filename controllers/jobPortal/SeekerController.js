@@ -1,7 +1,7 @@
 import JobSeeker from "../../models/jobPortal/jobSeeker.js";
 import Job from "../../models/jobPortal/job.js";
 import mongoose from "mongoose";
-import jobApplication from "../../models/jobPortal/jobApplication.js";
+// import jobApplication from "../../models/jobPortal/jobApplication.js";
 import applications from "../../models/jobPortal/applications.js";
 const getProfileData = async (req,res)=>{
     try{
@@ -109,7 +109,7 @@ const applyToJob = async (req, res) => {
       }
 
       // Check if the user has already applied to this job
-      const existingApplication = await jobApplication.findOne({ jobId, userId });
+      const existingApplication = await applications.findOne({ jobId, userId });
       if (existingApplication) {
           return res.status(400).json({ msg: "You have already applied to this job" });
       }
@@ -155,7 +155,7 @@ const applyToJob = async (req, res) => {
               path: 'jobId',
               select: 'title description location salaryRange status companyLogo',
           });
-
+          console.log("jobs are",applications1)
       // If no applications are found, return a 404 response
       if (!applications1 || applications1.length === 0) {
           return res.status(404).json({ message: 'No applied jobs found' });
