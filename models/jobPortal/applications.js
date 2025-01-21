@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const applicationSchema = new mongoose.Schema({
     jobId: { 
@@ -40,4 +40,4 @@ const applicationSchema = new mongoose.Schema({
 applicationSchema.index({ jobId: 1 });
 applicationSchema.index({ userId: 1 });
 
-module.exports = mongoose.model("Applications", applicationSchema);
+export default mongoose.model("Applications", applicationSchema);

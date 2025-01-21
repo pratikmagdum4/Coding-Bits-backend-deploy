@@ -1,6 +1,8 @@
 import JobSeeker from "../../models/jobPortal/jobSeeker.js";
 import Job from "../../models/jobPortal/job.js";
-
+import mongoose from "mongoose";
+import jobApplication from "../../models/jobPortal/jobApplication.js";
+import applications from "../../models/jobPortal/applications.js";
 const getProfileData = async (req,res)=>{
     try{
         const id = req.user.id;
@@ -19,7 +21,7 @@ const getProfileData = async (req,res)=>{
 }
 const getRecommendedJobs = async (req, res) => {
   try {
-    const  id  = req.user.userId;
+    const  id  = req.user.id;
     console.log("id is in get ",id)
     const profile = await JobSeeker.findById(id);
     console.log("profile is",profile)
@@ -77,4 +79,96 @@ const AddUpdateProfileData = async (req, res) => {
       res.status(500).json({ msg: 'Internal Server error' });
   }
 };
-export  {getRecommendedJobs,getProfileData,AddUpdateProfileData};
+
+const applyToJob = async (req, res) => {
+  try {
+      const { jobId } = req.params;
+      const userId = req.user.id;
+      const { resume, coverLetter } = req.body;
+
+      // Validate job ID
+      if (!mongoose.Types.ObjectId.isValid(jobId)) {
+          return res.status(400).json({ msg: "Invalid job ID" });
+      }
+
+      // Check if the job exists
+      const job = await Job.findById(jobId);
+      if (!job) {
+          return res.status(404).json({ msg: "Job not found" });
+      }
+
+      // Check if the job is active
+      if (job.status !== 'active') {
+          return res.status(400).json({ msg: "This job is no longer active" });
+      }
+
+      // Check if the user exists
+      const user = await JobSeeker.findById(userId);
+      if (!user) {
+          return res.status(404).json({ msg: "User not found" });
+      }
+
+      // Check if the user has already applied to this job
+      const existingApplication = await jobApplication.findOne({ jobId, userId });
+      if (existingApplication) {
+          return res.status(400).json({ msg: "You have already applied to this job" });
+      }
+
+      // Create a new application
+      const newApplication = new applications({
+          jobId,
+          userId,
+          resume,
+          coverLetter,
+          status: "applied",
+          history: [{ status: 'applied', updatedAt: Date.now() }],
+      });
+
+      // Save the new application
+      await newApplication.save();
+
+      // Update the job's applications array
+      job.applications.push(newApplication._id);
+      await job.save();
+
+      // Update the user's appliedJobs array
+      user.appliedJobs.push(jobId);
+      await user.save();
+
+      // Return success response
+      res.status(201).json({
+          message: "Application submitted successfully",
+          application: newApplication,
+      });
+  } catch (err) {
+      console.error('Error applying to job:', err);
+      res.status(500).json({ message: 'Internal server error' });
+  }
+};const getAppliedJobs = async (req, res) => {
+  try {
+      const id = req.user.id;
+
+      // Find all applications for the user and populate the job details
+      const applications1 = await applications
+          .find({ userId: id })
+          .populate({
+              path: 'jobId',
+              select: 'title description location salaryRange status companyLogo',
+          });
+
+      // If no applications are found, return a 404 response
+      if (!applications1 || applications1.length === 0) {
+          return res.status(404).json({ message: 'No applied jobs found' });
+      }
+
+      // Return the list of applied jobs with job details
+      res.status(200).json({
+          message: 'Applied jobs fetched successfully',
+          applications1,
+      });
+  } catch (err) {
+      console.error('Error fetching applied jobs:', err);
+      res.status(500).json({ message: 'Internal server error' });
+  }
+};
+export  {getRecommendedJobs,getProfileData,AddUpdateProfileData,applyToJob,getAppliedJobs};
