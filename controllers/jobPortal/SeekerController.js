@@ -11,12 +11,12 @@ const getProfileData = async (req,res)=>{
         console.log("the user is",user)
         if(user==null)
         {
-            res.status(400).json({msg:"Fill the Profile data"})
+           return  res.status(400).json({msg:"Fill the Profile data"})
         }
-        res.status(200).json(user);
+       return res.status(200).json(user);
     }catch(err)
     {
-        res.status(500).json({msg:"Internal server error"});
+       return res.status(500).json({msg:"Internal server error"});
     }
 }
 const getRecommendedJobs = async (req, res) => {
