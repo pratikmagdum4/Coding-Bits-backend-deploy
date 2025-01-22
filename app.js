@@ -109,13 +109,22 @@ app.post('/reset-password', resetPasswordLimiter, async (req, res) => {
 app.use(express.json());
 
 connectDB();
+const allowedOrigins = ['http://localhost:5173', 'https://codingbits.vercel.app'];
+
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
 // app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
 app.use('/job-portal',RecruiterRoutes)
