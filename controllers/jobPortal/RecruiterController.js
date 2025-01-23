@@ -59,7 +59,6 @@ const updateJob = async (req,res) =>{
 
     const updatedJob = await job.save();
 
-    // Return the updated job
     res.status(200).json({ message: 'Job updated successfully', job: updatedJob });
     }catch(err)
     {
@@ -69,31 +68,29 @@ const updateJob = async (req,res) =>{
 }
 const deleteJob = async (req, res) => {
     try {
-      const { id } = req.params; // Job ID
-      const postedBy = req.user.id; // Recruiter's ID from authentication middleware
+      const { id } = req.params; 
+      const postedBy = req.user.id;
   
-      // Find the job by ID
       const job = await Job.findById(id);
       if (!job) {
         return res.status(404).json({ message: 'Job not found' });
       }
   
-      // Check if the logged-in recruiter is the one who posted the job
+   
       if (job.postedBy.toString() !== postedBy) {
         return res.status(403).json({ message: 'You are not authorized to delete this job' });
       }
   
-      // Delete the job
       await Job.findByIdAndDelete(id);
   
-      // Remove the job ID from the recruiter's postedJobs array
+     
       await Recruiter.findByIdAndUpdate(
         postedBy,
         { $pull: { postedJobs: id } },
         { new: true }
       );
   
-      // Return success message
+      
       res.status(200).json({ message: 'Job deleted successfully' });
     } catch (err) {
       console.error('Error deleting job:', err);
@@ -120,17 +117,16 @@ const deleteJob = async (req, res) => {
 
   const getApplicants = async (req, res) => {
     try {
-        const userId = req.user.id; // Assuming this is the employer's ID
+        const userId = req.user.id; 
         const { jobId } = req.params;
 
-        // Find all applications for the specified jobId and populate the userId field to get applicant details
-        const applications1 = await applications.find({ jobId }).populate('userId', 'name email profile'); // Adjust fields as needed
+       
+        const applications1 = await applications.find({ jobId }).populate('userId', 'name email profile');
 
         if (!applications1 || applications1.length === 0) {
             return res.status(404).json({ message: "No applicants found for this job." });
         }
 
-        // Send the list of applicants as a response
         res.status(200).json({ success: true, data: applications1 });
     } catch (err) {
         console.error("Error fetching applicants:", err);
@@ -156,4 +152,27 @@ const getProfileDataOfApplicant = async (req,res)=>{
       res.status(500).json({msg:"Internal server error"});
   }
 }
-  export {AddJob,updateJob,deleteJob,getJobsByRecruiter,getApplicants,getProfileDataOfApplicant};
+const updateApplicationStatusChange = async (req, res) => {
+  try {
+    const recruiterId = req.user.id;
+    const applicationId = req.params.applicationId;
+    const { status } = req.body;
+
+    // Find the application by ID
+    const application = await applications.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({ success: false, msg: "Application not found" });
+    }
+
+    // Update the status
+    application.status = status || application.status;
+    await application.save();
+
+    // Send success response
+    res.status(200).json({ success: true, msg: "Status updated successfully" });
+  } catch (error) {
+    console.log("Error:", error);
+    res.status(500).json({ success: false, msg: "Status update failed" });
+  }
+};
+  export {AddJob,updateJob,deleteJob,getJobsByRecruiter,getApplicants,getProfileDataOfApplicant,updateApplicationStatusChange};
