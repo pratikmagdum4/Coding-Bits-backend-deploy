@@ -1,46 +1,45 @@
-import Course from "../../models/courseSection/course";
+import Course from "../../models/courseSection/course.js";
 import Teacher from "../../models/courseSection/teacher.js";
+import userModel from "../../models/userModel.js";
+import Student from "../../models/courseSection/student.js";
 
 
- const addCourseByTeacher = async (req, res) => {
+const addCourseByTeacher = async (req, res) => {
   const { title, description, price, duration, image, category, type, liveDetails, recordings } = req.body;
-  const teacherId = req.user.id; // Assuming teacher ID is available in the request (from authentication middleware)
+  const teacherId = req.user.id;
 
   try {
-    // Validate required fields
     if (!title || !description || !price || !duration || !image || !category || !type) {
       return res.status(400).json({ message: "All fields are required." });
     }
+    const updatedcategory = Array.isArray(category) ? category : [];
 
-    // Check if the teacher exists
+
     const teacher = await Teacher.findById(teacherId);
     if (!teacher) {
       return res.status(404).json({ message: "Teacher not found." });
     }
 
-    // Create a new course
     const newCourse = new Course({
       title,
       description,
-      instructor: teacher.name, // Use the teacher's name as the instructor
+      instructor: teacher.name,
       price,
       duration,
       image,
-      category: category.split(","), // Convert category string to array
+      category: updatedcategory,
       type,
-      liveDetails: type === "Live" ? liveDetails : null, // Only include liveDetails if type is "Live"
-      recordings: type === "Recorded" ? recordings : [], // Only include recordings if type is "Recorded"
-      isPublished: false, // Default to unpublished
+      liveDetails: type === "Live" ? liveDetails : null,
+      recordings: type === "Recorded" ? recordings : [],
+      isPublished: false,
+      creatorId: teacherId
     });
 
-    // Save the course to the database
     const savedCourse = await newCourse.save();
 
-    // Associate the course with the teacher
-    teacher.courses.push(savedCourse._id); // Add the course ID to the teacher's courses array
+    teacher.courses.push(savedCourse._id);
     await teacher.save();
 
-    // Return the created course
     res.status(201).json({
       message: "Course created successfully!",
       course: savedCourse,
@@ -53,38 +52,34 @@ import Teacher from "../../models/courseSection/teacher.js";
 
 
 // Controller to update a course
-export const updateCourse = async (req, res) => {
+const updateCourse = async (req, res) => {
   const { id } = req.params; // Course ID
-  const { title, description, price, duration, image, category, type, liveDetails, recordings } = req.body;
-  const teacherId = req.user._id; // Teacher ID from authentication
+  const { title, description, price, duration, image, category, type, liveDetails, recordings, isPublished } = req.body;
+  const teacherId = req.user._id;
+  const updatedcategory = Array.isArray(category) ? category : [];
 
   try {
-    // Find the course
     const course = await Course.findById(id);
     if (!course) {
       return res.status(404).json({ message: "Course not found." });
     }
 
-    // Check if the teacher is the instructor of the course
-    if (course.instructor !== req.user.name) {
-      return res.status(403).json({ message: "You are not authorized to update this course." });
-    }
+    // if (course.instructor !== req.user.name) {
+    //   return res.status(403).json({ message: "You are not authorized to update this course." });
+    // }
 
-    // Update course fields
     course.title = title || course.title;
     course.description = description || course.description;
     course.price = price || course.price;
     course.duration = duration || course.duration;
     course.image = image || course.image;
-    course.category = category ? category.split(",") : course.category;
+    course.category = updatedcategory || course.category;
     course.type = type || course.type;
     course.liveDetails = type === "Live" ? liveDetails : null;
     course.recordings = type === "Recorded" ? recordings : [];
-
-    // Save the updated course
+    course.isPublished = isPublished || course.isPublished;
     const updatedCourse = await course.save();
 
-    // Return the updated course
     res.status(200).json({
       message: "Course updated successfully!",
       course: updatedCourse,
@@ -97,13 +92,13 @@ export const updateCourse = async (req, res) => {
 
 
 
-// Controller to get all courses
-export const getAllCourses = async (req, res) => {
+ const getAllCoursesByTeacher = async (req, res) => {
   try {
-    // Fetch all courses
-    const courses = await Course.find();
-
-    // Return the courses
+    const id = req.user.id;
+    const courses = await Course.find({ creatorId: id });
+    if (!courses) {
+      return res.status(404).json({ msg: "No courses found" })
+    }
     res.status(200).json(courses);
   } catch (error) {
     console.error("Error fetching courses:", error);
@@ -112,18 +107,15 @@ export const getAllCourses = async (req, res) => {
 };
 
 
-// Controller to get a course by ID
-export const getCourseById = async (req, res) => {
-  const { id } = req.params; // Course ID
+const getCourseById = async (req, res) => {
+  const { id } = req.params;
 
   try {
-    // Find the course by ID
     const course = await Course.findById(id);
     if (!course) {
       return res.status(404).json({ message: "Course not found." });
     }
 
-    // Return the course
     res.status(200).json(course);
   } catch (error) {
     console.error("Error fetching course:", error);
@@ -134,24 +126,20 @@ export const getCourseById = async (req, res) => {
 
 
 
-// Controller to delete a course
-export const deleteCourse = async (req, res) => {
-  const { id } = req.params; // Course ID
-  const teacherId = req.user._id; // Teacher ID from authentication
+const deleteCourse = async (req, res) => {
+  const { id } = req.params;
+  const teacherId = req.user._id;
 
   try {
-    // Find the course
     const course = await Course.findById(id);
     if (!course) {
       return res.status(404).json({ message: "Course not found." });
     }
 
-    // Check if the teacher is the instructor of the course
-    if (course.instructor !== req.user.name) {
-      return res.status(403).json({ message: "You are not authorized to delete this course." });
-    }
+    // if (course.instructor !== req.user.name) {
+    //   return res.status(403).json({ message: "You are not authorized to delete this course." });
+    // }
 
-    // Remove the course from the teacher's courses array
     const teacher = await Teacher.findById(teacherId);
     if (teacher) {
       teacher.courses = teacher.courses.filter(
@@ -160,13 +148,88 @@ export const deleteCourse = async (req, res) => {
       await teacher.save();
     }
 
-    // Delete the course
     await Course.findByIdAndDelete(id);
 
-    // Return success message
     res.status(200).json({ message: "Course deleted successfully!" });
   } catch (error) {
     console.error("Error deleting course:", error);
     res.status(500).json({ message: "Failed to delete course." });
   }
 };
+
+
+const AddUpdateTeacherProfile = async (req, res) => {
+  try {
+    const { name, email, password, bio, courses } = req.body;
+    const id = req.user.id;
+    const user = await userModel.findById(id);
+    const pass = user.password;
+    const updatedCourses = Array.isArray(courses) ? courses : [];
+
+    let teacher = await Teacher.findById(id);
+
+    if (!teacher) {
+      teacher = new Teacher({
+        _id: id,
+        name,
+        email,
+        password: pass,
+        bio,
+        courses: updatedCourses,
+      });
+    } else {
+      teacher.name = name || teacher.name;
+      teacher.email = email || teacher.email;
+      teacher.password = password || teacher.password;
+      teacher.bio = bio || teacher.bio;
+      teacher.courses = updatedCourses.length > 0 ? updatedCourses : teacher.courses;
+    }
+
+    await teacher.save();
+
+    res.status(200).json({
+      msg: "Teacher profile updated successfully",
+      teacher: {
+        _id: teacher._id,
+        name: teacher.name,
+        email: teacher.email,
+        bio: teacher.bio,
+        courses: teacher.courses,
+        ratings: teacher.ratings,
+        createdAt: teacher.createdAt,
+        updatedAt: teacher.updatedAt,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Internal Server error" });
+  }
+};
+const getTeacherProfile = async (req, res) => {
+  try {
+    const id = req.user.id;
+
+    const teacher = await Teacher.findOne({ _id: id });
+    if (!teacher) {
+      return res.status(404).json({ msg: "Teacher not found" })
+    }
+    res.status(200).json(teacher);
+  } catch (error) {
+    console.error(err);
+    res.status(500).json({ msg: "Internal Server error" });
+  }
+}
+
+const getEnrolledStudents = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const students = await Student.find({ enrolledCourses: courseId }).select(
+      "name email progress"
+    );
+    res.status(200).json(students);
+  } catch (error) {
+    console.error("Error fetching enrolled students:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+export { addCourseByTeacher, AddUpdateTeacherProfile, getTeacherProfile, getEnrolledStudents, getAllCoursesByTeacher, deleteCourse, getCourseById, updateCourse }

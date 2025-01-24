@@ -85,6 +85,10 @@ const courseSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  creatorId:{
+    type:String,
+    required:true
+  }
 });
 
 

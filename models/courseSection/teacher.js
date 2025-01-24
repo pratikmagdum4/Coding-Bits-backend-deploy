@@ -30,7 +30,8 @@ const teacherSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: "Course", // Reference to the Course schema
     },
-  ],
+  ], 
+  
   ratings: {
     average: { type: Number, default: 0, min: 0, max: 5 },
     totalReviews: { type: Number, default: 0 },

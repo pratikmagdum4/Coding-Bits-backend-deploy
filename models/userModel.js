@@ -4,9 +4,9 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, required: true, default: "user" }, // 'recruiter' or 'job_seeker'
-  profilePicture: { type: String }, // URL to profile picture
-  bio: { type: String }, // Short bio for job seekers
+  role: { type: String, required: true, default: "user" }, 
+  profilePicture: { type: String }, 
+  bio: { type: String }, 
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

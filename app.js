@@ -17,6 +17,8 @@ import RecruiterRoutes from './routes/JobPortal/RecruiterRoutes.js'
 import JobRoutes from './routes/JobPortal/JobRoutes.js'
 import SeekerRoutes from './routes/JobPortal/SeekerRoutes.js'
 import AuthRoutes from './routes/authRoutes/authRoutes.js'
+import TeacherRoutes from './routes/CoursesRoutes/TeacherRoutes.js'
+import CoursesRoutes from './routes/CoursesRoutes/CoursesRoutes.js'
 dotenv.config();
 
 const app = express();
@@ -131,5 +133,9 @@ app.use('/job-portal',RecruiterRoutes)
 app.use('/job-portal',JobRoutes)
 app.use('/auth',AuthRoutes)
 app.use('/job-portal',SeekerRoutes)
+app.use('/course-section',TeacherRoutes)
+app.use('/course-section',CoursesRoutes)
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
