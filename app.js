@@ -19,6 +19,7 @@ import SeekerRoutes from './routes/JobPortal/SeekerRoutes.js'
 import AuthRoutes from './routes/authRoutes/authRoutes.js'
 import TeacherRoutes from './routes/CoursesRoutes/TeacherRoutes.js'
 import CoursesRoutes from './routes/CoursesRoutes/CoursesRoutes.js'
+import StudentRoutes from './routes/CoursesRoutes/StudentRoutes.js'
 dotenv.config();
 
 const app = express();
@@ -135,6 +136,8 @@ app.use('/auth',AuthRoutes)
 app.use('/job-portal',SeekerRoutes)
 app.use('/course-section',TeacherRoutes)
 app.use('/course-section',CoursesRoutes)
+app.use('/course-section',StudentRoutes)
+
 
 
 const PORT = process.env.PORT || 3000;

@@ -23,7 +23,7 @@ const studentSchema = new Schema({
   enrolledCourses: [
     {
       type: Schema.Types.ObjectId,
-      ref: "Course", // Reference to the Course schema
+      ref: "Course", 
     },
   ],
   progress: [
