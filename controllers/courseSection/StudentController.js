@@ -84,7 +84,7 @@ const enrollStudentInCourse = async(req,res)=>{
         const student = await Student.findById(id);
         if(!student)
         {
-          return res.status(404).json({msg:"Student Not found"})
+          return res.status(404).json({msg:"Student Not found ,Please Update Your Profile to Enroll"})
         }
 
         if(student.enrolledCourses.includes(courseId))
