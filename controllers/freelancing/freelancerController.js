@@ -1,5 +1,5 @@
 import Freelancer from '../../models/freelancerPlatform/freelancer.js';
-import Project from '../../models/freelancerPlatform/project.js'; 
+import Project from '../../models/freelancerPlatform/project.js';
 
 
 export const createFreelancerProfile = async (req, res) => {
@@ -25,10 +25,12 @@ export const createFreelancerProfile = async (req, res) => {
 // Get freelancer profile
 export const getFreelancerProfile = async (req, res) => {
     try {
-        const freelancerId = req.params.id;
+
+        const freelancerId = req.user.id;
+        console.log("the id is ", freelancerId)
         const freelancer = await Freelancer.findById(freelancerId)
             .populate('appliedProjects')
-            .populate('assignedProjects'); // Populating applied and assigned projects for the freelancer
+            .populate('assignedProjects');
 
         if (!freelancer) {
             return res.status(404).json({ message: 'Freelancer not found' });
@@ -36,6 +38,7 @@ export const getFreelancerProfile = async (req, res) => {
 
         res.status(200).json({ freelancer });
     } catch (error) {
+        console.log(error)
         res.status(500).json({ message: 'Error fetching freelancer profile', error: error.message });
     }
 };
@@ -58,6 +61,46 @@ export const updateFreelancerProfile = async (req, res) => {
         res.status(500).json({ message: 'Error updating profile', error: error.message });
     }
 };
+const AddUpdateFreelancerProfile = async (req, res) => {
+    try {
+        const { name, email, skills, location, resume, portfolio, hourlyRate, appliedProjects } = req.body;
+        const id = req.user.id;
+
+        const updatedSkills = Array.isArray(skills) ? skills : [];
+
+        let freelancer = await Freelancer.findById(id);
+
+        if (!freelancer) {
+            freelancer = new Freelancer({
+                _id: id,
+                name,
+                email,
+                skills: updatedSkills,
+                location,
+                resume,
+                portfolio,
+                hourlyRate,
+                appliedProjects,
+            });
+        } else {
+            freelancer.name = name || freelancer.name;
+            freelancer.email = email || freelancer.email;
+            freelancer.skills = updatedSkills.length > 0 ? updatedSkills : freelancer.skills;
+            freelancer.location = location || freelancer.location;
+            freelancer.resume = resume || freelancer.resume;
+            freelancer.portfolio = portfolio || freelancer.portfolio;
+            freelancer.hourlyRate = hourlyRate || freelancer.hourlyRate;
+            freelancer.appliedProjects = appliedProjects || freelancer.appliedProjects;
+        }
+
+        await freelancer.save();
+
+        res.status(200).json({ msg: "Freelancer profile updated successfully", freelancer });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Internal Server Error' });
+    }
+};
 
 // Delete freelancer profile
 export const deleteFreelancerProfile = async (req, res) => {
@@ -78,7 +121,8 @@ export const deleteFreelancerProfile = async (req, res) => {
 // Browse all open projects
 export const browseProjects = async (req, res) => {
     try {
-        const projects = await Project.find({ isOpen: true }).populate('clientId'); // Populate client information for each project
+        const projects = await Project.find().populate('postedBy'); // Populate client information for each project
+        console.log("proect are", projects)
         res.status(200).json({ projects });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching projects', error: error.message });
@@ -88,7 +132,7 @@ export const browseProjects = async (req, res) => {
 // View applied projects
 export const getAppliedProjects = async (req, res) => {
     try {
-        const freelancerId = req.params.id;
+        const freelancerId = req.user.id;
         const freelancer = await Freelancer.findById(freelancerId).populate('appliedProjects');
 
         if (!freelancer) {
@@ -144,3 +188,58 @@ export const rateCompletedProject = async (req, res) => {
         res.status(500).json({ message: 'Error rating project', error: error.message });
     }
 };
+
+
+export const applyForJob = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { coverLetter, bidAmount } = req.body;
+        const freelancerId = req.user.id;
+        // Validate inputs
+        if (!freelancerId || !coverLetter || !bidAmount) {
+            return res.status(400).json({ message: "All fields are required." });
+        }
+
+        // Check if project exists
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: "Project not found." });
+        }
+
+        // Check if freelancer exists
+        const freelancer = await Freelancer.findById(freelancerId);
+        if (!freelancer) {
+            return res.status(404).json({ message: "Freelancer not found." });
+        }
+
+        // Check if freelancer has already applied
+        const alreadyApplied = project.proposals.some(
+            (proposal) => proposal.freelancerId.toString() === freelancerId
+        );
+        if (alreadyApplied) {
+            return res.status(400).json({ message: "You have already applied for this job." });
+        }
+
+        // Add proposal to the project
+        project.proposals.push({
+            freelancerId: freelancerId,
+            coverLetter,
+            bidAmount,
+            submittedOn: new Date(),
+        });
+
+        // Add project to freelancer's applied list
+        freelancer.appliedProjects.push(projectId);
+
+        // Save updates
+        await project.save();
+        await freelancer.save();
+
+        return res.status(200).json({ message: "Proposal submitted successfully!" });
+    } catch (error) {
+        console.error("Error applying for job:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+export { AddUpdateFreelancerProfile };

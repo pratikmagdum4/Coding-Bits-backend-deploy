@@ -32,7 +32,7 @@ const projectSchema = new mongoose.Schema({
 	  tags:[{type:String}],
 	  proposals: [ 
 		{
-		  developerId: { type: mongoose.Schema.Types.ObjectId, ref: "Developer" },
+			freelancerId: { type: mongoose.Schema.Types.ObjectId, ref: "freelancer" },
 		  coverLetter: { type: String },
 		  bidAmount: { type: Number },
 		  submittedOn: { type: Date, default: Date.now },
