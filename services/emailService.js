@@ -1,31 +1,50 @@
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 dotenv.config();
 
-// Helper function to send reset email
-export const sendResetEmail = (email, token) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER, // Use environment variables for credentials
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+// Configure the transporter using environment variables
+const transporter = nodemailer.createTransport({
+  service: "Gmail", 
+  auth: {
+    user: process.env.EMAIL, // Email address from environment
+    pass: process.env.EMAIL_PASSWORD, // Email password from environment
+  },
+});
 
-  const resetLink = `http://localhost:3000/reset-password?token=${token}`;
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'Password Reset',
-    text: `Click the following link to reset your password: ${resetLink}`,
-  };
+// Helper function to generate OTP
+export const generateOTP = () => {
+  return crypto.randomInt(100000, 999999); // Generate a 6-digit OTP
+};
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Error sending email:', error);
-    } else {
-      console.log('Email sent:', info.response);
-    }
-  });
+// Helper function to send OTP email
+export const sendOtpEmail = async (email, otp) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: 'Your OTP for Password Reset',
+      html: `
+        <p>Hello,</p>
+        <p>You requested to reset your password. Use the OTP below to proceed:</p>
+        <h3>${otp}</h3>
+        <p>This OTP is valid for 5 minutes. If you did not request this, please ignore this email.</p>
+      `,
+    };
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`OTP email sent to ${email}:`, info.response);
+  } catch (error) {
+    console.error('Error sending OTP email:', error.message);
+    throw new Error('Failed to send OTP email. Please try again later.');
+  }
+};
+
+// Helper function to validate email sending configuration
+export const validateEmailConfig = () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error(
+      'Email configuration is missing. Please set EMAIL_USER and EMAIL_PASS in the .env file.'
+    );
+  }
 };

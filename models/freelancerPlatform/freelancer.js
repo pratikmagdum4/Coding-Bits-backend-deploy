@@ -1,9 +1,10 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
-const developerSchema = new mongoose.Schema({
-	developerId: { type: mongoose.Schema.Types.ObjectId, auto: true },
+const freelancerSchema = new mongoose.Schema({
+	freelancerId: { type: mongoose.Schema.Types.ObjectId, auto: true },
 	name: { type: String, required: true },
 	email: { type: String, required: true, unique: true },
+	password: { type: String, required: true },
 	skills: [{ type: String }],
 	portfolio: { type: String },
 	appliedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
@@ -19,4 +20,4 @@ const developerSchema = new mongoose.Schema({
 	dateJoined:{type:Date,default:Date.now},
 });
 
-module.exports = mongoose.model("Developer", developerSchema);
+export default mongoose.model("Freelancer", freelancerSchema);

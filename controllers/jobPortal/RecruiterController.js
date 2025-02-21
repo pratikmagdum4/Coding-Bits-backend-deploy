@@ -2,17 +2,23 @@ import Job from "../../models/jobPortal/job.js";
 import Recruiter from "../../models/jobPortal/recruiter.js";
 import applications from "../../models/jobPortal/applications.js";
 import JobSeeker from "../../models/jobPortal/jobSeeker.js";
+
+
+
 const AddJob = async (req,res) => {
     try {
 
-        const { title, description, skillsRequired, location, salaryRange, applications, status, companyLogo, matchCriteria } = req.body;
+        const { title, description, skillsRequired, location, salaryRange, status, companyLogo, matchCriteria } = req.body;
+
+
+        
         const postedBy = req.user.id;
         console.log("poseted id is ",postedBy)
         if (!title || !description || !skillsRequired || !location) {
             res.status(400).json({ msg: "Missing fields required" });
         }
         const newJob = new Job({
-            title, description, skillsRequired, location, salaryRange, applications, status, companyLogo, matchCriteria,postedBy
+            title, description, skillsRequired, location, salaryRange, status, companyLogo, matchCriteria,postedBy
         })
         const savedJob = await newJob.save();
 

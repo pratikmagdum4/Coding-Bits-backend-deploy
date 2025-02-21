@@ -17,6 +17,7 @@ const jobSeekerSchema = new Schema(
       unique: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
     },
+    password: { type: String, required: true },
     skills: {
       type: [String],
       default: [],

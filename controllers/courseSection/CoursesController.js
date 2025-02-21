@@ -3,6 +3,7 @@ import Course from "../../models/courseSection/course.js";
 
 const getAllCourses = async (req,res)=>{
     try{
+        console.log("hi")
         const courses = await Course.find();
         console.log("The courses are",courses)
         if(!courses)

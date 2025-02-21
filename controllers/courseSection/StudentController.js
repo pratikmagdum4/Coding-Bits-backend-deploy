@@ -3,6 +3,23 @@ import userModel from "../../models/userModel.js";
 import Teacher from "../../models/courseSection/teacher.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+const getAllStudents = async (req, res) => {
+  try {
+    // Fetch all students from the database
+    const students = await Student.find().populate("enrolledCourses");
+
+    // If no students are found, return a 404 error
+    if (!students || students.length === 0) {
+      return res.status(404).json({ msg: "No students found" });
+    }
+
+    // Return the list of students
+    res.status(200).json({ msg: "Students fetched successfully", students });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Internal Server Error" });
+  }
+};
 
 const AddUpdateStudentProfile = async (req, res) => {
     try {
@@ -61,7 +78,7 @@ const AddUpdateStudentProfile = async (req, res) => {
   };
 const getStudentProfile = async(req,res)=>{
     try{
-        const id = req.user.id;
+        const {id} = req.params
 
         const profile = await Student.findById(id);
         if(!profile)
@@ -71,7 +88,7 @@ const getStudentProfile = async(req,res)=>{
         res.status(200).json(profile);
     }catch(error)
     {
-        console.error(err);
+        console.error(error);
       res.status(500).json({ msg: "Internal Server error" });
     }
 }
@@ -80,13 +97,13 @@ const enrollStudentInCourse = async(req,res)=>{
   try{
         const id = req.user.id;
         const {courseId} = req.params;
-
+    console.log("the id is",courseId)
         const student = await Student.findById(id);
         if(!student)
         {
           return res.status(404).json({msg:"Student Not found ,Please Update Your Profile to Enroll"})
         }
-
+        console.log(student.enrolledCourses)
         if(student.enrolledCourses.includes(courseId))
         {
           return res.status(400).json({msg:"Student have already enrolled in this course"})
@@ -103,4 +120,4 @@ const enrollStudentInCourse = async(req,res)=>{
     res.status(500).json({ msg: "Internal Server error" });
   }
 }
-export {AddUpdateStudentProfile,getStudentProfile,enrollStudentInCourse}
+export {AddUpdateStudentProfile,getStudentProfile,enrollStudentInCourse,getAllStudents}

@@ -1,8 +1,11 @@
+import mongoose from 'mongoose';
 const clientSchema = new mongoose.Schema({
-	clientId: { type: mongoose.Schema.Types.ObjectId, auto: true },
+	
 	name: { type: String, required: true },
+	password: { type: String, },
 	email: { type: String, required: true, unique: true },
 	company: { type: String },
+	domain: { type: String },
 	contactNumber: { type: String }, 
 	profilePicture: { type: String }, 
 	postedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
@@ -11,5 +14,5 @@ const clientSchema = new mongoose.Schema({
 	dateJoined: { type: Date, default: Date.now },
   });
   
-  module.exports = mongoose.model("Client", clientSchema);
+  export default mongoose.model("Client", clientSchema);
   

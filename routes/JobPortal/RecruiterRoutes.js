@@ -3,7 +3,7 @@ import  {AddJob,updateJob,deleteJob,getJobsByRecruiter,getApplicants,getProfileD
 import authenticate from '../../middleware/authMiddleware.js'
 const router = express.Router();
 
-router.post('/jobs', authenticate,AddJob);
+router.post('/jobs', authenticate, AddJob);
 
 router.put('/job/:id', authenticate, updateJob);
 router.delete('/jobs/:id', authenticate, deleteJob);

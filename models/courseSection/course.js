@@ -17,10 +17,16 @@ const courseSchema = new Schema({
     minlength: [20, "Description must be at least 20 characters long."],
   },
   instructor: {
-    type: String,
-    required: [true, "Instructor name is required."],
-    trim: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Referencing the User model (Instructor)
+    required: true,
   },
+  students: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Students enrolled in this course
+    },
+  ],
   price: {
     type: Number,
     required: [true, "Course price is required."],
@@ -44,11 +50,13 @@ const courseSchema = new Schema({
     required: [true, "Course type is required."],
     enum: ["Live", "Recorded"], // Specifies the course type
   },
+
+  // Live Course Details
   liveDetails: {
     schedule: [
       {
-        date: { type: Date, required: true },
-        time: { type: String, required: true }, // Example: "10:00 AM - 12:00 PM"
+        date: { type: Date, required: function () { return this.type === "Live"; } },
+        time: { type: String, required: function () { return this.type === "Live"; } }, // Example: "10:00 AM - 12:00 PM"
       },
     ],
     meetingLink: {
@@ -59,20 +67,35 @@ const courseSchema = new Schema({
     },
     platform: {
       type: String,
-      default: "Zoom", // Example: Zoom, Microsoft Teams, etc.
+      default: "Zoom", // Example: Zoom, Microsoft Teams, Google Meet
     },
   },
+
+  // Recorded Course Details
   recordings: [
     {
       title: { type: String, required: true },
-      videoUrl: { type: String, required: true }, // URL of the recorded video
+      videoUrl: { type: String, required: true }, // Secure URL of the recorded video
       duration: { type: String, required: true }, // Example: "10 minutes"
     },
   ],
+
+  // Security for LMS Links
+  lmsAccessTokens: [
+    {
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+      token: { type: String, required: true },
+      expiresAt: { type: Date, required: true },
+    },
+  ],
+
+  // Ratings
   ratings: {
     average: { type: Number, default: 0, min: 0, max: 5 },
     totalReviews: { type: Number, default: 0 },
   },
+
+  // Meta Info
   createdAt: {
     type: Date,
     default: Date.now,
@@ -85,23 +108,42 @@ const courseSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  creatorId:{
-    type:String,
-    required:true
-  }
+  creatorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
 });
 
 
-// Middleware to auto-update the `updatedAt` field
 courseSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
-// Method to add a new recording
+
 courseSchema.methods.addRecording = function (recording) {
   this.recordings.push(recording);
   return this.save();
+};
+
+
+courseSchema.methods.generateLmsAccessToken = function (userId, token, expiryTime) {
+  this.lmsAccessTokens.push({
+    userId,
+    token,
+    expiresAt: expiryTime,
+  });
+  return this.save();
+};
+
+
+courseSchema.methods.verifyLmsAccessToken = function (userId, token) {
+  const tokenEntry = this.lmsAccessTokens.find(
+    (entry) => entry.userId.toString() === userId.toString() && entry.token === token
+  );
+  if (!tokenEntry) return false;
+  return tokenEntry.expiresAt > new Date();
 };
 
 const Course = model("Course", courseSchema);

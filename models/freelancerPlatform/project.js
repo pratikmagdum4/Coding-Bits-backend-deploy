@@ -1,7 +1,6 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema({
-	projectId: { type: mongoose.Schema.Types.ObjectId, auto: true },
 	title: { type: String, required: true },
 	description: { type: String, required: true },
 	skillsRequired: [{ type: String }],
@@ -12,7 +11,7 @@ const projectSchema = new mongoose.Schema({
 		enum: ["Open", "In Progress", "Completed"],
 		default: "Open",
 	},
-	assignedDeveloper: {
+	assignedFreelancer: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "Developer",
 	},
@@ -43,4 +42,5 @@ const projectSchema = new mongoose.Schema({
 	  lastUpdated: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Project", projectSchema);
+// module.exports = mongoose.model("Project", projectSchema);
+export default mongoose.model("Project", projectSchema);

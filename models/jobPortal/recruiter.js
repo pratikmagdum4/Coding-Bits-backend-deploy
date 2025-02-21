@@ -17,6 +17,7 @@ const recruiterSchema = new Schema(
       unique: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
     },
+    password: { type: String, required: true },
     company: {
       type: String,
       maxlength: [100, 'Company name cannot exceed 100 characters'],

@@ -1,118 +1,54 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import bodyParser from 'body-parser';
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import connectDB from './config/db.js';
-import authRoutes from './routes/authRoutes.js';
-import protectedRoutes from './routes/protected.js';
 import cors from 'cors';
+import bodyParser from 'body-parser';
 
-import User from './models/userModel.js'; 
-import PasswordReset from './models/passwordResetSchema.js'; 
-import { sendResetEmail } from './services/emailService.js'; 
-import RecruiterRoutes from './routes/JobPortal/RecruiterRoutes.js'
-import JobRoutes from './routes/JobPortal/JobRoutes.js'
-import SeekerRoutes from './routes/JobPortal/SeekerRoutes.js'
-import AuthRoutes from './routes/authRoutes/authRoutes.js'
-import TeacherRoutes from './routes/CoursesRoutes/TeacherRoutes.js'
-import CoursesRoutes from './routes/CoursesRoutes/CoursesRoutes.js'
-import StudentRoutes from './routes/CoursesRoutes/StudentRoutes.js'
+import connectDB from './config/db.js';
+
+// Route Imports
+import protectedRoutes from './routes/protected.js';
+import AuthRoutes from './routes/authRoutes/authRoutes.js';
+import RecruiterRoutes from './routes/JobPortal/RecruiterRoutes.js';
+import JobRoutes from './routes/JobPortal/JobRoutes.js';
+import SeekerRoutes from './routes/JobPortal/SeekerRoutes.js';
+import TeacherRoutes from './routes/CoursesRoutes/TeacherRoutes.js';
+import CoursesRoutes from './routes/CoursesRoutes/CoursesRoutes.js';
+import StudentRoutes from './routes/CoursesRoutes/StudentRoutes.js';
+import freelancerRoutes from "./routes/freelancing/freelancerRoutes.js";
+import clientRoutes from "./routes/freelancing/clientRoutes.js";
+import projectRoutes from "./routes/freelancing/projectRoutes.js";
+import lmsRoutes from './routes/lmsRoutes.js';
+
+import auditLogRoutes from './routes/auditLogRoutes.js';
+//import adminFreelancingRoutes from "./routes/adminRoutes/freelancing.js";
+
+import adminFreelancingRoutes from "./routes/adminRoutes/freelancing/freelancing.js";
+import adminRecruiterRoutes from "./routes/adminRoutes/jobportal/adminRecruiterRoutes.js";
+import adminJobRoutes from "./routes/adminRoutes/jobportal/adminJobRoutes.js";
+import adminJobSeekerRoutes from "./routes/adminRoutes/jobportal/adminJobSeekerRoutes.js";
+import adminCourseSectionRoutes from './routes/adminRoutes/courseSection/adminCourseSectionRoutes.js'
+import adminAllCount from './routes/adminRoutes/adminCountRoutes.js'
+import adminTeacherRoutes from './routes/adminRoutes/courseSection/adminTeacherRoutes.js'
+import adminStudentRoutes from './routes/CoursesRoutes/StudentRoutes.js'
 dotenv.config();
 
 const app = express();
-app.use(bodyParser.json());
-app.use(cors());
-app.use(helmet());
 
-const forgotPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per 15 minutes
-  message: 'Too many requests, please try again later.',
-});
-
-const resetPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 reset password requests per 15 minutes
-  message: 'Too many reset attempts, please try again later.',
-});
-
-// Route to request password reset
-app.post('/forgot-password', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email || !/\S+@\S+\.\S+/.test(email)) {
-    return res.status(400).json({ message: 'Invalid email format' });
-  }
-
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(404).json({ message: 'Email not found' });
-  }
-
-  const token = jwt.sign({ email }, process.env.SECRET_KEY, { expiresIn: '1h' });
-
-  const resetToken = new PasswordReset({
-    email,
-    token,
-    expiration: new Date(Date.now() + 60 * 60 * 1000), 
-  });
-
-  await resetToken.save();
-  sendResetEmail(email, token);
-
-  res.status(200).json({ message: 'Password reset email sent' });
-});
-
-// Route to reset the password
-app.post('/reset-password', resetPasswordLimiter, async (req, res) => {
-  const { token, newPassword } = req.body;
-
-  if (
-    !newPassword ||
-    newPassword.length < 8 ||
-    !/\d/.test(newPassword) ||
-    !/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
-  ) {
-    return res.status(400).json({
-      message:
-        'Password must be at least 8 characters, and include at least one number and one special character.',
-    });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    const email = decoded.email;
-
-    const resetToken = await PasswordReset.findOne({ token });
-    if (!resetToken || resetToken.expiration < Date.now()) {
-      return res.status(400).json({ message: 'Invalid or expired token' });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    await user.save();
-
-    await PasswordReset.deleteOne({ token });
-
-    res.status(200).json({ message: 'Password has been reset successfully' });
-  } catch (error) {
-    console.error('Error during password reset:', error);
-    return res.status(400).json({ message: 'Invalid token' });
-  }
-});
-
-app.use(express.json());
-
+// Database Connection
 connectDB();
-const allowedOrigins = ['http://localhost:5173', 'https://codingbits.vercel.app'];
+
+// Middleware Configuration
+app.use(bodyParser.json());
+app.use(helmet({ crossOriginResourcePolicy: false }));
+
+// CORS Configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://codingbits.vercel.app',
+];
+
+
 
 app.use(
   cors({
@@ -128,17 +64,34 @@ app.use(
   })
 );
 
-// app.use('/api/auth', authRoutes);
+// Routes
 app.use('/api', protectedRoutes);
-app.use('/job-portal',RecruiterRoutes)
-app.use('/job-portal',JobRoutes)
-app.use('/auth',AuthRoutes)
-app.use('/job-portal',SeekerRoutes)
-app.use('/course-section',TeacherRoutes)
-app.use('/course-section',CoursesRoutes)
-app.use('/course-section',StudentRoutes)
+app.use('/auth', AuthRoutes);
+app.use('/job-portal', RecruiterRoutes);
+app.use('/job-portal', JobRoutes);
+app.use('/job-portal', SeekerRoutes);
+app.use('/course-section', TeacherRoutes);
+app.use('/course-section', CoursesRoutes);
+app.use('/course-section', StudentRoutes);
+app.use("/api/freelancer", freelancerRoutes);
+app.use("/api/client", clientRoutes);
+app.use("/api/project", projectRoutes);
+app.use('/api/lms', lmsRoutes);
+
+app.use('/api/audit-logs', auditLogRoutes);
+
+app.use("/api/admin", adminFreelancingRoutes);
+app.use("/api/admin/recruiters", adminRecruiterRoutes);
+app.use("/api/admin/jobs", adminJobRoutes);
+app.use("/api/admin/jobseekers", adminJobSeekerRoutes);
+app.use("/api/admin/courses", adminCourseSectionRoutes);
+app.use("/api/admin/teacher", adminTeacherRoutes);
+app.use("/api/admin/students", adminStudentRoutes);
+app.use("/api/admin", adminAllCount);
 
 
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
